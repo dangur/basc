@@ -1,0 +1,69 @@
+# DigitalOcean App Platform spec for ResilientRaleigh.
+# Replace the GitHub repo before `doctl apps create --spec .do/app.yaml`.
+# Point DATABASE_URL at Tiger Data (PostgreSQL + TimescaleDB), not plain DO Postgres.
+name: resilient-raleigh
+region: nyc
+
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+
+services:
+  - name: api
+    environment_slug: python
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    source_dir: /backend
+    github:
+      repo: REPLACE_ME/basc
+      branch: main
+      deploy_on_push: true
+    build_command: pip install -r requirements.txt
+    run_command: uvicorn app.main:app --host 0.0.0.0 --port 8080
+    http_port: 8080
+    health_check:
+      http_path: /api/health
+    envs:
+      - key: PYTHON_VERSION
+        scope: BUILD_TIME
+        value: "3.12"
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: GEMINI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: GEMINI_MODEL
+        scope: RUN_TIME
+        value: gemini-1.5-flash
+      - key: SENTRY_DSN
+        scope: RUN_TIME
+        type: SECRET
+      - key: SENTRY_ENVIRONMENT
+        scope: RUN_TIME
+        value: production
+      - key: CORS_ORIGINS
+        scope: RUN_TIME
+        value: ${web.PUBLIC_URL}
+
+  - name: web
+    environment_slug: node-js
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    source_dir: /frontend
+    github:
+      repo: REPLACE_ME/basc
+      branch: main
+      deploy_on_push: true
+    build_command: npm ci && npm run build
+    run_command: npm start
+    http_port: 8080
+    health_check:
+      http_path: /
+    envs:
+      - key: NODE_VERSION
+        scope: BUILD_TIME
+        value: "20"
+      - key: API_URL
+        scope: RUN_TIME
+        value: ${api.PUBLIC_URL}

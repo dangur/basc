@@ -1,0 +1,15 @@
+# Local TimescaleDB stand-in for Tiger Data. The City deployment should use a Tiger Data service URL.
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: resilient_raleigh
+    volumes:
+      - resilient_raleigh_pg:/var/lib/postgresql/data
+
+volumes:
+  resilient_raleigh_pg:
